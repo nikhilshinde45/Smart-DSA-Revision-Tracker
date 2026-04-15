@@ -9,30 +9,31 @@ export const getTodayRevisions = async (req, res) => {
     const startOfDay = new Date(today.setHours(0, 0, 0, 0));
     const endOfDay = new Date(today.setHours(23, 59, 59, 999));
 
-    // Find problems that have a revision date matching today
+    // Find problems that have a revision date matching today OR are overdue
     const problems = await Problem.find({
       userId: req.user._id,
       revisionDates: {
         $elemMatch: {
-          $gte: startOfDay,
           $lte: endOfDay,
         },
       },
     });
 
-    // Filter to only include those with pending status for today's revision
+    // Filter to only include those with pending status for today's or overdue revisions
     const todayRevisions = problems
       .map((problem) => {
-        const todayIndex = problem.revisionDates.findIndex((date) => {
+        // Find the earliest date that is pending and <= endOfDay
+        const todayIndex = problem.revisionDates.findIndex((date, index) => {
           const d = new Date(date);
-          return d >= startOfDay && d <= endOfDay;
+          return d <= endOfDay && problem.revisionStatus[index] === 'pending';
         });
 
-        if (todayIndex !== -1 && problem.revisionStatus[todayIndex] === 'pending') {
+        if (todayIndex !== -1) {
           return {
             ...problem.toObject(),
             revisionIndex: todayIndex,
             revisionDay: todayIndex === 0 ? 1 : todayIndex === 1 ? 3 : 7,
+            isOverdue: new Date(problem.revisionDates[todayIndex]) < startOfDay
           };
         }
         return null;
