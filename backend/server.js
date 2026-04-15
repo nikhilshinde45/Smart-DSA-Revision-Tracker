@@ -18,9 +18,15 @@ connectDB();
 const app = express();
 
 // CORS
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://smart-dsa-revision-tracker.vercel.app',
+  process.env.CLIENT_URL,
+].filter(Boolean); // removes undefined if CLIENT_URL is not set
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: allowedOrigins,
     credentials: true,
   })
 );
