@@ -21,12 +21,22 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:5173',
   'https://smart-dsa-revision-tracker.vercel.app',
+  'https://main.d1mx4w8dtv01kv.amplifyapp.com',
   process.env.CLIENT_URL,
-].filter(Boolean); // removes undefined if CLIENT_URL is not set
+  process.env.FRONTEND_URL,
+].filter(Boolean); // removes undefined if env vars are not set
 
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, etc.)
+      if (!origin) return callback(null, true);
+      // Allow exact matches
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      // Allow any *.amplifyapp.com subdomain
+      if (/\.amplifyapp\.com$/.test(origin)) return callback(null, true);
+      callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
   })
 );
